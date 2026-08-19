@@ -19,6 +19,7 @@ function preprocessMarkdown(text) {
    ══════════════════════════════════════════════ */
 const API_BASE = 'https://sicklesense-api-dgh3aqdwb3eghdc4.swedencentral-01.azurewebsites.net'
 const API_QUERY = `${API_BASE}/api/query`
+const MASCOT_IMG = `${import.meta.env.BASE_URL}mascot.png`
 
 const examples = [
   'When should hydroxyurea be started in adults with sickle cell anemia?',
@@ -179,7 +180,7 @@ function App() {
       {/* ── Top bar ── */}
       <header className="topbar">
         <a className="brand" href="#" onClick={(e) => { e.preventDefault(); goHome() }} aria-label="SickleSense home">
-          <span className="brand-mark"><img src="/mascot.png" alt="SickleSense mascot" /></span>
+          <span className="brand-mark"><img src={MASCOT_IMG} alt="SickleSense mascot" /></span>
           <span><strong>SickleSense</strong><small>AI-Powered Knowledge for Sickle Cell Care</small></span>
         </a>
         <nav className={menuOpen ? 'nav-links is-open' : 'nav-links'} aria-label="Primary navigation">
@@ -206,7 +207,7 @@ function App() {
                     <p className="hero-description">Ask a focused question. SickleSense searches trusted clinical sources and shows you the evidence behind every answer.</p>
                   </div>
                   <div className="hero-mascot">
-                    <img src="/mascot.png" alt="SickleSense AI assistant mascot" />
+                    <img src={MASCOT_IMG} alt="SickleSense AI assistant mascot" />
                   </div>
                 </div>
               )}
