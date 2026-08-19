@@ -1,9 +1,24 @@
 import React, { useState, useRef } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ArrowUp, BookOpen, ChevronDown, FileText, Menu, ShieldCheck, Sparkles, X, AlertTriangle, Loader2, Database, Brain, Shield, Search, Layers, CheckCircle } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import './styles.css'
 
-const API_URL = 'https://sicklesense-backend-ekbhdzfxaya9e0fa.swedencentral-01.azurewebsites.net/api/ask'
+function preprocessMarkdown(text) {
+  if (!text) return ''
+  // Expand collapsed table rows (e.g. '| |---|' or '| | Row |') into separate lines
+  let formatted = text.replace(/\|\s*\|\s*/g, '|\n| ')
+  // Ensure headers have blank lines before them
+  formatted = formatted.replace(/([^\n])\n(#{1,6}\s)/g, '$1\n\n$2')
+  return formatted
+}
+
+/* ══════════════════════════════════════════════
+   API CONFIGURATION — FastAPI on Azure App Service
+   ══════════════════════════════════════════════ */
+const API_BASE = 'https://sicklesense-api-dgh3aqdwb3eghdc4.swedencentral-01.azurewebsites.net'
+const API_QUERY = `${API_BASE}/api/query`
 
 const examples = [
   'When should hydroxyurea be started in adults with sickle cell anemia?',
@@ -39,33 +54,20 @@ const SOURCE_DOCUMENTS = [
   },
 ]
 
-/* ── Confidence badge helper ── */
-function confidenceColor(level) {
-  switch (level) {
-    case 'high':   return { color: '#2e7d5a', bg: '#edf8f2', label: 'High confidence' }
-    case 'medium': return { color: '#8a5a22', bg: '#fff4dd', label: 'Medium confidence' }
-    case 'low':    return { color: '#944133', bg: '#fde8e4', label: 'Low confidence' }
-    default:       return { color: '#62747d', bg: '#f0f3f5', label: 'Insufficient evidence' }
-  }
-}
-
 /* ── Floating blood cells background ── */
 function BloodCells() {
   return (
     <div className="blood-cells" aria-hidden="true">
-      {/* Normal round red blood cells */}
       <div className="cell cell-round c1" />
       <div className="cell cell-round c2" />
       <div className="cell cell-round c3" />
       <div className="cell cell-round c4" />
       <div className="cell cell-round c5" />
       <div className="cell cell-round c6" />
-      {/* Sickle-shaped cells */}
       <div className="cell cell-sickle s1" />
       <div className="cell cell-sickle s2" />
       <div className="cell cell-sickle s3" />
       <div className="cell cell-sickle s4" />
-      {/* Tiny particles / platelets */}
       <div className="cell cell-dot d1" />
       <div className="cell cell-dot d2" />
       <div className="cell cell-dot d3" />
@@ -79,37 +81,59 @@ function App() {
   const [query, setQuery] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [answer, setAnswer] = useState(null)
+  const [result, setResult] = useState(null)   // { query, answer, sources }
   const [error, setError] = useState(null)
   const [showSources, setShowSources] = useState(true)
-  const [showEvidence, setShowEvidence] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [askedQuestion, setAskedQuestion] = useState('')
   const [currentPage, setCurrentPage] = useState('ask')
   const textareaRef = useRef(null)
 
+  /* ── API call — new FastAPI format ── */
   async function askBackend(question) {
     setLoading(true)
     setError(null)
-    setAnswer(null)
+    setResult(null)
     setAskedQuestion(question)
     setSubmitted(true)
     setCurrentPage('ask')
 
     try {
-      const res = await fetch(API_URL, {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 30000) // 30s timeout
+
+      const res = await fetch(API_QUERY, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ query: question, top_k: 5 }),
+        signal: controller.signal,
       })
+      clearTimeout(timeout)
+
       if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}))
-        throw new Error(errBody.error || `Server responded with ${res.status}`)
+        let message = `Server responded with ${res.status}`
+        try {
+          const errBody = await res.json()
+          if (errBody.detail) {
+            message = typeof errBody.detail === 'string'
+              ? errBody.detail
+              : JSON.stringify(errBody.detail)
+          }
+        } catch { /* use default message */ }
+        throw new Error(message)
       }
+
       const data = await res.json()
-      setAnswer(data)
+      setResult(data)
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.')
+      if (err.name === 'AbortError') {
+        setError('Request timed out. The server may be processing a complex query — please try again.')
+      } else {
+        setError(err.message || 'Something went wrong. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -136,10 +160,9 @@ function App() {
   function goHome() {
     setQuery('')
     setSubmitted(false)
-    setAnswer(null)
+    setResult(null)
     setError(null)
     setAskedQuestion('')
-    setShowEvidence(false)
     setCurrentPage('ask')
   }
 
@@ -149,8 +172,6 @@ function App() {
     window.scrollTo(0, 0)
   }
 
-  const conf = answer ? confidenceColor(answer.confidence) : null
-
   return (
     <div className="app-shell">
       <BloodCells />
@@ -158,7 +179,7 @@ function App() {
       {/* ── Top bar ── */}
       <header className="topbar">
         <a className="brand" href="#" onClick={(e) => { e.preventDefault(); goHome() }} aria-label="SickleSense home">
-          <span className="brand-mark"><img src={`${import.meta.env.BASE_URL}mascot.png`} alt="SickleSense mascot" /></span>
+          <span className="brand-mark"><img src="/mascot.png" alt="SickleSense mascot" /></span>
           <span><strong>SickleSense</strong><small>AI-Powered Knowledge for Sickle Cell Care</small></span>
         </a>
         <nav className={menuOpen ? 'nav-links is-open' : 'nav-links'} aria-label="Primary navigation">
@@ -185,7 +206,7 @@ function App() {
                     <p className="hero-description">Ask a focused question. SickleSense searches trusted clinical sources and shows you the evidence behind every answer.</p>
                   </div>
                   <div className="hero-mascot">
-                    <img src={`${import.meta.env.BASE_URL}mascot.png`} alt="SickleSense AI assistant mascot" />
+                    <img src="/mascot.png" alt="SickleSense AI assistant mascot" />
                   </div>
                 </div>
               )}
@@ -220,6 +241,7 @@ function App() {
               )}
             </section>
 
+            {/* ── Results workspace ── */}
             {submitted && (
               <section className="workspace" aria-live="polite">
                 <div className="answer-column">
@@ -228,6 +250,7 @@ function App() {
                     <p>{askedQuestion}</p>
                   </div>
 
+                  {/* Loading state */}
                   {loading && (
                     <article className="answer-card loading-card">
                       <div className="loading-state">
@@ -238,6 +261,7 @@ function App() {
                     </article>
                   )}
 
+                  {/* Error state */}
                   {error && !loading && (
                     <article className="answer-card error-card">
                       <div className="answer-heading">
@@ -255,7 +279,8 @@ function App() {
                     </article>
                   )}
 
-                  {answer && !loading && (
+                  {/* Answer state — renders markdown */}
+                  {result && !loading && (
                     <article className="answer-card">
                       <div className="answer-heading">
                         <div className="answer-icon"><Sparkles size={18} /></div>
@@ -263,24 +288,19 @@ function App() {
                           <span className="answer-label">SickleSense answer</span>
                           <p className="answer-meta">Generated from retrieved clinical evidence</p>
                         </div>
-                        <span className="confidence" style={{ color: conf.color, background: conf.bg }}>{conf.label}</span>
+                        {result.sources && result.sources.length > 0 && (
+                          <span className="confidence" style={{ color: '#2e7d5a', background: '#edf8f2' }}>
+                            {result.sources.length} source{result.sources.length !== 1 ? 's' : ''} cited
+                          </span>
+                        )}
                       </div>
-                      <h2>Clinical Recommendation</h2>
-                      <p className="recommendation">{answer.recommendation}</p>
-                      {answer.evidence && (
-                        <>
-                          <h3 className="evidence-heading" onClick={() => setShowEvidence(!showEvidence)}>
-                            <BookOpen size={16} />
-                            Supporting Evidence
-                            <ChevronDown size={16} className={showEvidence ? 'rotated' : ''} />
-                          </h3>
-                          {showEvidence && (
-                            <div className="evidence-block">
-                              <p>{answer.evidence}</p>
-                            </div>
-                          )}
-                        </>
-                      )}
+
+                      <div className="answer-markdown">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {preprocessMarkdown(result.answer)}
+                        </ReactMarkdown>
+                      </div>
+
                       <div className="boundary">
                         <ShieldCheck size={17} />
                         <span>This information is for clinical education and evidence review only. It does not constitute personalized medical advice.</span>
@@ -289,30 +309,38 @@ function App() {
                   )}
                 </div>
 
+                {/* ── Sources panel ── */}
                 <aside className="sources-panel">
                   <button className="sources-heading" onClick={() => setShowSources(!showSources)}>
-                    <span><BookOpen size={17} /> Citations</span>
+                    <span><BookOpen size={17} /> Guideline Sources</span>
                     <ChevronDown className={showSources ? 'rotated' : ''} size={18} />
                   </button>
+
                   {showSources && (
                     <div className="source-list">
                       {loading && <p className="sources-loading">Retrieving sources…</p>}
-                      {answer && answer.citations && answer.citations.length > 0 && answer.citations.map((citation, index) => (
-                        <div className="source-item" key={citation.chunk_id || index}>
+
+                      {result && result.sources && result.sources.length > 0 && result.sources.map((src, index) => (
+                        <div className="source-item" key={src.chunk_id || index}>
                           <span className="source-number">0{index + 1}</span>
                           <div>
-                            <strong>{citation.document}</strong>
-                            <span>{citation.section}</span>
-                            <small>Page {citation.page}{citation.chunk_id ? ` · ${citation.chunk_id}` : ''}</small>
+                            <strong>{src.section}</strong>
+                            <span className="source-title">{src.title}</span>
+                            <small>
+                              Page {src.page_number} · Score {src.score.toFixed(4)}
+                              {src.chunk_id && <> · <code className="chunk-id">{src.chunk_id}</code></>}
+                            </small>
                           </div>
                           <FileText size={16} />
                         </div>
                       ))}
-                      {answer && (!answer.citations || answer.citations.length === 0) && !loading && (
-                        <p className="no-sources">No citations available for this response.</p>
+
+                      {result && (!result.sources || result.sources.length === 0) && !loading && (
+                        <p className="no-sources">No sources were retrieved for this response.</p>
                       )}
+
                       {error && !loading && (
-                        <p className="no-sources">Citations could not be retrieved.</p>
+                        <p className="no-sources">Sources could not be retrieved.</p>
                       )}
                     </div>
                   )}
@@ -320,6 +348,7 @@ function App() {
               </section>
             )}
 
+            {/* ── Trust strip (landing) ── */}
             {!submitted && (
               <section className="trust-strip">
                 <div><ShieldCheck size={20} /><strong>Built for careful reading</strong><span>Every response stays within the supplied clinical sources.</span></div>
@@ -396,7 +425,7 @@ function App() {
               <article className="about-card">
                 <div className="about-card-icon"><Brain size={22} /></div>
                 <h3>Grounded Generation</h3>
-                <p>The LLM is constrained to answer only using the retrieved evidence passages. Every claim must be directly supported by source text, with citations referencing document, section, page, and chunk ID. The system returns structured JSON with a confidence assessment.</p>
+                <p>The LLM is constrained to answer only using the retrieved evidence passages. Every claim must be directly supported by source text, with citations referencing document, section, page, and chunk ID. The system returns structured responses with source evidence.</p>
               </article>
               <article className="about-card">
                 <div className="about-card-icon"><Shield size={22} /></div>
@@ -423,7 +452,7 @@ function App() {
                   <span className="step-number">02</span>
                   <div>
                     <strong>Hybrid evidence retrieval</strong>
-                    <p>The question is embedded with BiomedBERT and searched against the Azure AI Search index using hybrid (keyword + vector) search. Top-7 chunks are retrieved.</p>
+                    <p>The question is embedded with BiomedBERT and searched against the Azure AI Search index using hybrid (keyword + vector) search. Top-K chunks are retrieved.</p>
                   </div>
                 </div>
                 <div className="pipeline-step">
@@ -436,8 +465,8 @@ function App() {
                 <div className="pipeline-step">
                   <span className="step-number">04</span>
                   <div>
-                    <strong>Constrained generation</strong>
-                    <p>The LLM receives only the retrieved evidence and strict grounding rules. It generates a structured JSON response with recommendation, evidence summary, citations, and confidence level.</p>
+                    <strong>Grounded generation</strong>
+                    <p>The LLM receives only the retrieved evidence and strict grounding rules. It generates a structured response with clinical recommendation, evidence summary, and cited sources.</p>
                   </div>
                 </div>
               </div>
