@@ -44,8 +44,11 @@ button { cursor: pointer; }
    FLOATING BLOOD CELLS — CSS-only background
    ══════════════════════════════════════════════ */
 .blood-cells {
-  position: fixed; inset: 0; z-index: 0;
-  overflow: hidden; pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 /* Normal round red blood cells — biconcave disc look with radial gradient */
@@ -53,8 +56,8 @@ button { cursor: pointer; }
   position: absolute;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #e8a8a0 0%, #d4645a 40%, #c0392b 70%, #a52f22 100%);
-  box-shadow: inset 0 0 8px rgba(165,49,34,.25);
-  opacity: 0.07;
+  box-shadow: inset 0 0 8px rgba(165,49,34,.2);
+  opacity: 0.04;
 }
 
 /* Sickle cells — crescent / elongated shape */
@@ -64,7 +67,7 @@ button { cursor: pointer; }
   background: radial-gradient(ellipse at 40% 50%, #d4645a 0%, #c0392b 60%, #8b2018 100%);
   border-radius: 50% 50% 50% 50% / 80% 80% 20% 20%;
   transform: rotate(-25deg);
-  opacity: 0.06;
+  opacity: 0.035;
 }
 
 /* Tiny platelets / dots */
@@ -72,7 +75,7 @@ button { cursor: pointer; }
   position: absolute;
   border-radius: 50%;
   background: #c0392b;
-  opacity: 0.05;
+  opacity: 0.03;
 }
 
 /* ── Individual cell positions + animations ── */
@@ -118,12 +121,17 @@ button { cursor: pointer; }
 
 /* ── App shell ── */
 .app-shell {
-  position: relative; z-index: 1;
+  position: relative;
   min-height: 100vh;
   background:
     radial-gradient(circle at 80% 10%, rgba(192,57,43,.04) 0, transparent 400px),
     radial-gradient(circle at 15% 85%, rgba(58,123,213,.04) 0, transparent 400px),
     var(--bg);
+}
+
+main {
+  position: relative;
+  z-index: 2;
 }
 
 /* ── Top bar ── */
@@ -133,7 +141,7 @@ button { cursor: pointer; }
   border-bottom: 1px solid rgba(226,232,238,.8);
   background: rgba(247,248,251,.88);
   backdrop-filter: blur(8px);
-  position: sticky; top: 0; z-index: 10;
+  position: sticky; top: 0; z-index: 20;
 }
 .brand { display: flex; align-items: center; gap: 11px; color: var(--ink); text-decoration: none; margin-right: auto; }
 .brand-mark { width: 38px; height: 38px; overflow: hidden; border-radius: 11px; display: grid; place-items: center; box-shadow: 0 5px 16px rgba(192,57,43,.15); flex-shrink: 0; }
@@ -388,7 +396,7 @@ h1 em { color: var(--accent); font-family: Fraunces, serif; font-weight: 500; le
 .contact-link-btn.ghost:hover { background: rgba(255,255,255,.2); }
 
 /* ── Footer ── */
-footer { max-width: 1080px; margin: 0 auto; padding: 20px 32px 30px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; color: #97a5b0; font-size: 10px; }
+footer { position: relative; z-index: 2; max-width: 1080px; margin: 0 auto; padding: 20px 32px 30px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; color: #97a5b0; font-size: 10px; }
 :focus-visible { outline: 3px solid #d4908a; outline-offset: 3px; }
 
 /* ══════════════════════════════════════════════
