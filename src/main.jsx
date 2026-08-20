@@ -189,7 +189,13 @@ function App() {
       }
 
       const data = await res.json()
-      setResult(data)
+      const normalized = {
+        ...data,
+        answer: data.answer || data.recommendation || data.evidence || 'No response text available.',
+        sources: data.sources || data.citations || [],
+        confidence: data.confidence || 'medium'
+      }
+      setResult(normalized)
     } catch (err) {
       if (err.name === 'AbortError') {
         setError('Request timed out. The server may be processing a complex query — please try again.')

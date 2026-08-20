@@ -98,15 +98,18 @@ def query_endpoint(req: func.HttpRequest) -> func.HttpResponse:
 
         # 1. Check Patient Safety Gate
         if is_patient_specific(query):
+            refusal_text = (
+                "**Clinical Boundary Notice:** This system provides population-level guideline evidence "
+                "and is prohibited from providing patient-specific medical advice or individualized dosing regimens. "
+                "For patient management decisions, please consult ASH / NHLBI guideline protocols or a licensed hematologist."
+            )
             refusal = {
                 "query": query,
-                "recommendation": (
-                    "**Clinical Boundary Notice:** This system provides population-level guideline evidence "
-                    "and is prohibited from providing patient-specific medical advice or individualized dosing regimens. "
-                    "For patient management decisions, please consult ASH / NHLBI guideline protocols or a licensed hematologist."
-                ),
+                "recommendation": refusal_text,
+                "answer": refusal_text,
                 "evidence": "",
                 "citations": [],
+                "sources": [],
                 "confidence": "insufficient",
                 "verification_status": [{"chunk_id": "none", "status": "blocked by patient safety gate", "passed": True}]
             }
@@ -139,11 +142,14 @@ def query_endpoint(req: func.HttpRequest) -> func.HttpResponse:
             })
 
         if not chunks:
+            insufficient_text = "No matching clinical evidence was found in the indexed guidelines for this query."
             insufficient = {
                 "query": query,
-                "recommendation": "No matching clinical evidence was found in the indexed guidelines for this query.",
+                "recommendation": insufficient_text,
+                "answer": insufficient_text,
                 "evidence": "",
                 "citations": [],
+                "sources": [],
                 "confidence": "insufficient",
                 "verification_status": []
             }
@@ -181,12 +187,16 @@ def query_endpoint(req: func.HttpRequest) -> func.HttpResponse:
             else:
                 verification.append({"chunk_id": cid or "unknown", "status": "unverified", "passed": False})
         
+        rec = parsed.get("recommendation", "")
+        cits = parsed.get("citations", [])
         result_payload = {
             "query": query,
-            "recommendation": parsed.get("recommendation", ""),
+            "recommendation": rec,
+            "answer": rec,
             "evidence": parsed.get("evidence", ""),
-            "citations": parsed.get("citations", []),
-            "confidence": parsed.get("confidence", "medium"),
+            "citations": cits,
+            "sources": cits,
+            "confidence": parsed.get("confidence", "high"),
             "verification_status": verification
         }
         return func.HttpResponse(json.dumps(result_payload), status_code=200, headers=CORS_HEADERS)
