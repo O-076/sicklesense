@@ -664,12 +664,12 @@ function App() {
               </div>
             </div>
 
-            {/* Contact & Hackathon Info Card */}
+            {/* Contact & API Info Card */}
             <div className="support-contact-card">
               <div className="contact-icon"><MessageSquare size={24} /></div>
               <div>
                 <h3>Need Technical Support or API Access?</h3>
-                <p>SickleSense is powered by an open REST API on Azure App Service. For integration documentation, test endpoints, or research inquiries, check the interactive Swagger documentation or visit the project repository.</p>
+                <p>SickleSense is powered by an open REST API on Azure App Service. For integration documentation, test endpoints, and live schema parameters, explore the interactive Swagger documentation.</p>
                 <div className="contact-links">
                   <a
                     href="https://sicklesense-api-dgh3aqdwb3eghdc4.swedencentral-01.azurewebsites.net/docs"
@@ -680,15 +680,6 @@ function App() {
                     <Terminal size={14} />
                     Interactive Swagger API Docs
                     <ExternalLink size={12} />
-                  </a>
-                  <a
-                    href="https://github.com/O-076/sicklesense"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="contact-link-btn ghost"
-                  >
-                    <ExternalLink size={14} />
-                    GitHub Repository
                   </a>
                 </div>
               </div>
