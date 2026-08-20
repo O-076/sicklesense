@@ -20,10 +20,10 @@ function preprocessMarkdown(text) {
 }
 
 /* ══════════════════════════════════════════════
-   API CONFIGURATION — FastAPI on Azure App Service
+   API CONFIGURATION — Serverless Azure Function Backend
    ══════════════════════════════════════════════ */
-const API_BASE = 'https://sicklesense-api-dgh3aqdwb3eghdc4.swedencentral-01.azurewebsites.net'
-const API_QUERY = `${API_BASE}/api/query`
+const API_BASE = 'https://sicklesense-func.azurewebsites.net/api'
+const API_QUERY = `${API_BASE}/query`
 const API_HEALTH = `${API_BASE}/health`
 const MASCOT_IMG = `${import.meta.env.BASE_URL}mascot.png`
 
