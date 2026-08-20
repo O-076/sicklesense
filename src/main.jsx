@@ -362,7 +362,16 @@ function App() {
                       </div>
 
                       <div className="answer-markdown">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            table: ({ node, ...props }) => (
+                              <div className="table-responsive">
+                                <table {...props} />
+                              </div>
+                            ),
+                          }}
+                        >
                           {preprocessMarkdown(result.answer)}
                         </ReactMarkdown>
                       </div>
