@@ -267,7 +267,7 @@ function App() {
               {!submitted && (
                 <div className="hero-layout">
                   <div className="hero-copy">
-                    <p className="kicker"><ShieldCheck size={15} /> Sickle cell disease evidence assistant</p>
+                    <p className="kicker"><ShieldCheck size={15} /> Sickle cell disease evidence assistant · Made by MINOR THREAT 2026</p>
                     <h1>Answers you can<br /><em>trace back.</em></h1>
                     <p className="hero-description">Ask a focused clinical question. SickleSense searches peer-reviewed guidelines and provides grounded answers with verifiable page-level citations.</p>
                   </div>
@@ -495,9 +495,9 @@ function App() {
         {currentPage === 'about' && (
           <section className="page-section">
             <div className="page-header">
-              <p className="kicker"><ShieldCheck size={15} /> About SickleSense</p>
+              <p className="kicker"><ShieldCheck size={15} /> About SickleSense · Made by MINOR THREAT 2026</p>
               <h1 className="page-title">Clinical evidence,<br /><em>clearly cited.</em></h1>
-              <p className="page-description">SickleSense is a citation-bound clinical retrieval-augmented generation (RAG) assistant designed for clinicians, hematologists, and healthcare learners to query sickle cell disease guidelines with complete provenance.</p>
+              <p className="page-description">SickleSense is a citation-bound clinical retrieval-augmented generation (RAG) assistant created by team <strong>MINOR THREAT 2026</strong>. It empowers clinicians, hematologists, and healthcare learners to query sickle cell disease guidelines with complete, verifiable provenance.</p>
             </div>
 
             {/* Live System Health Card */}
@@ -694,7 +694,7 @@ function App() {
       </main>
 
       <footer>
-        <span>For clinical education and evidence review.</span>
+        <span>For clinical education and evidence review · Made by MINOR THREAT 2026</span>
         <span>SickleSense · Sources before certainty</span>
       </footer>
     </div>
